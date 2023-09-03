@@ -1,0 +1,210 @@
+
+{% extends 'base_internal.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="container mt-5">
+        <h1>Music Player</h1>
+        <input type="file" id="musicFile" accept=".mp3" />
+        <button id="playButton" class="btn btn-primary">Play</button>
+        <button id="pauseButton" class="btn btn-secondary">Pause</button>
+        <button id="stopButton" class="btn btn-danger">Stop</button>
+        <button id="nextButton" class="btn btn-primary">Next</button>
+        <button id="prevButton" class="btn btn-primary">Previous</button>
+        <button id="repeatButton" class="btn btn-info">Repeat</button>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+        <input type="range" id="songSlider" min="0" max="100" step="1" value="0" class="mt-3">
+
+
+
+        <div class="mt-3">
+            <span id="artistName">Artist: Unknown Artist</span><br>
+            <span id="albumName">Album: Unknown Album</span><br>
+            <span id="songTitle">Title: Unknown Title</span><br>
+            <span id="yearReleased">Year: Unknown Year</span>
+        </div>
+        <img id="songCover" src="" alt="Album Cover">
+
+        <div class="mt-3">
+            <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+        </div>
+
+        <div class="mt-3">
+            <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.1/jsmediatags.min.js"></script>
+
+<script>
+    var sound;
+    var isPlaying = false;
+    var isPaused = false;
+    var isStopped = true;
+    var isRepeat = false;
+    var volume = 1.0;
+
+    document.getElementById('playButton').addEventListener('click', function () {
+        if (!sound) {
+            var fileInput = document.getElementById('musicFile');
+            if (fileInput.files.length > 0) {
+                var file = fileInput.files[0];
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    sound = new Howl({
+                        src: [e.target.result],
+                        html5: true,
+                        onend: function () {
+                            if (isRepeat) {
+                                sound.play();
+                            }
+                        }
+                    });
+                    sound.volume(volume);
+                    sound.play();
+                    isPlaying = true;
+                    isPaused = false;
+                    isStopped = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        } else {
+            if (isPaused) {
+                sound.play();
+                isPlaying = true;
+                isPaused = false;
+                isStopped = false;
+            }
+        }
+    });
+
+    document.getElementById('pauseButton').addEventListener('click', function () {
+        if (isPlaying) {
+            sound.pause();
+            isPlaying = false;
+            isPaused = true;
+            isStopped = false;
+        }
+    });
+
+    document.getElementById('stopButton').addEventListener('click', function () {
+        if (isPlaying || isPaused) {
+            sound.stop();
+            isPlaying = false;
+            isPaused = false;
+            isStopped = true;
+        }
+    });
+
+    document.getElementById('nextButton').addEventListener('click', function () {
+       
+    });
+
+    document.getElementById('prevButton').addEventListener('click', function () {
+    
+    });
+
+    document.getElementById('repeatButton').addEventListener('click', function () {
+        isRepeat = !isRepeat;
+    });
+
+    document.getElementById('volumeSlider').addEventListener('input', function () {
+        var value = parseFloat(this.value);
+        volume = value;
+        if (sound) {
+            sound.volume(value);
+        }
+    });
+
+
+    var songSlider = document.getElementById('songSlider');
+
+    // Add an event listener to update the song position when the slider value changes
+    {% comment %} songSlider.addEventListener('input', function () {
+        if (sound) {
+            var newPosition = sound.duration() * (parseFloat(this.value) / 100);
+            sound.seek(newPosition);
+        }
+    }); {% endcomment %}
+
+    var songSlider = document.getElementById('songSlider');
+    var currentTimeElement = document.getElementById('currentTime');
+    var durationElement = document.getElementById('duration');
+
+
+
+    // Function to format time in minutes and seconds
+    function formatTime(seconds) {
+        var minutes = Math.floor(seconds / 60);
+        var remainingSeconds = Math.floor(seconds % 60);
+        return minutes + ':' + (remainingSeconds < 10 ? '0' : '') + remainingSeconds;
+    }
+
+    // Update time elements while the song is playing
+    if (sound) {
+        sound.on('play', function () {
+            var updateInterval = setInterval(function () {
+                if (isPlaying) {
+                    var currentTime = sound.seek();
+                    var duration = sound.duration();
+
+                    currentTimeElement.textContent = formatTime(currentTime);
+                    durationElement.textContent = formatTime(duration);
+
+                    // Update the song slider position
+                    var sliderValue = (currentTime / duration) * 100;
+                    songSlider.value = sliderValue.toFixed(2);
+                } else {
+                    clearInterval(updateInterval); // Stop updating when not playing
+                }
+            }, 1000); // Update every 1 second
+        });
+    }
+
+
+    document.getElementById('musicFile').addEventListener('change', function () {
+        var fileInput = this;
+        var file = fileInput.files[0];
+
+        if (file) {
+            jsmediatags.read(file, {
+                onSuccess: function (tag) {
+                    var tags = tag.tags;
+                    var artist = tags.artist || 'Unknown Artist';
+                    var album = tags.album || 'Unknown Album';
+                    var title = tags.title || 'Unknown Title';
+                    var year = tags.year || 'Unknown Year';
+
+                    // Display metadata on the page
+                    document.getElementById('artistName').textContent = 'Artist: ' + artist;
+                    document.getElementById('albumName').textContent = 'Album: ' + album;
+                    document.getElementById('songTitle').textContent = 'Title: ' + title;
+                    document.getElementById('yearReleased').textContent = 'Year: ' + year;
+            // You can also extract album cover if available in tags.picture
+            if (tags.picture) {
+                var base64String = '';
+                for (var i = 0; i < tags.picture.data.length; i++) {
+                    base64String += String.fromCharCode(tags.picture.data[i]);
+                }
+                var base64 = 'data:' + tags.picture.format + ';base64,' + window.btoa(base64String);
+                document.getElementById('songCover').src = base64;
+            }
+        },
+        onError: function (error) {
+            console.error(error);
+        }
+        });
+        }
+        });
+
+// Add an event listener to update the song position when the slider value changes
+songSlider.addEventListener('input', function () {
+if (sound) {
+var newPosition = sound.duration() * (parseFloat(this.value) / 100);
+sound.seek(newPosition);
+}
+});
+</script>
+</div>
+{% endblock %}

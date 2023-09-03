@@ -1,0 +1,12 @@
+{% extends 'base_internal.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>{{ playlist.title }}</h2>
+    <ul>
+        {% for song in playlist.songs.all %}
+            <li>{{ song.title }} by {{ song.artist }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

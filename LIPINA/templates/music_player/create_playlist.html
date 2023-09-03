@@ -1,0 +1,18 @@
+{% extends 'base_internal.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="playlist_title" placeholder="Playlist Title" required>
+        <ul>
+            {% for song in songs %}
+                <li>
+                    <input type="checkbox" name="selected_songs" value="{{ song.id }}"> {{ song.title }}
+                </li>
+            {% endfor %}
+        </ul>
+        <button type="submit">Create Playlist</button>
+    </form>
+</div>
+{% endblock %}
